@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static',filename='css/dropzone.min.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static',filename='css/style.css') }}"
+    />
+    <title>Document</title>
+  </head>
+  <body>
+    <body>
+      <div class="container">
+        <form
+          action="{{ url_for('upload') }}"
+          class="dropzone"
+          method="post"
+          id="myForm"
+        >
+          <button type="submit" id="submit">submit</button>
+        </form>
+        <div class="eval-container"></div>
+      </div>
+      <h1 class="heading hidden">
+        Affichage des images similaires pour les 3 descripteurs
+      </h1>
+      <div class="hidden" id="container_imgs">
+        <div class="knn_box">
+          <img src="" alt="knn_neighbors" id="histogramme" class="knn_image" />
+          <h6>KNN pour l'histogramme</h6>
+        </div>
+        <div class="knn_box">
+          <img src="" alt="knn_neighbors" id="texture" class="knn_image" />
+          <h6>KNN pour texture</h6>
+        </div>
+        <div class="knn_box">
+          <img src="" alt="knn_neighbors" id="forme" class="knn_image" />
+          <h6>KNN pour la forme avec l'histogramme</h6>
+        </div>
+      </div>
+    </body>
+
+    <script src="../static/js/dropzone.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+      integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      Dropzone.options.myForm = {
+        maxFiles: 1,
+        addRemoveLinks: true,
+        autoProcessQueue: false, // this is important as you dont want form to be submitted unless you have clicked the submit button
+        autoDiscover: false, // // we specify on which div id we must show the files// this tells that the dropzone will not be clickable . we have to do it because v dont want the whole form to be clickable
+        init: function () {
+          var myDropzone = this;
+          //now we will submit the form when the button is clicked
+          $("#submit").on("click", function (e) {
+            e.preventDefault();
+            myDropzone.processQueue();
+            console.log("sucuess"); // this will submit your form to the specified action path
+            // after this, your whole form will get submitted with all the inputs + your files and the php code will remain as usual
+            //REMEMBER you DON'T have to call ajax or anything by yourself, dropzone will take care of that
+          });
+          myDropzone.on("addedfile", function (file) {
+            if (myDropzone.files.length > 1) {
+              myDropzone.removeFile(myDropzone.files[0]);
+            }
+          });
+          myDropzone.on("success", function (file, data) {
+            console.log(data[0]);
+            console.log(data[1]);
+            var template_table = `<table class="rwd-table">
+              <tr>
+                  <th>descripteur</th>
+                  <th>precision</th>
+                  <th>Accuracy</th>
+                  <th>recall</th>
+                  <th>f1_score</th>
+                </tr>
+                <tr>
+                  <td>Histogramme</td>
+                  <td data-th="Movie Title">${Number.parseFloat(
+                    data[0].precision
+                  ).toFixed(2)}%</td>
+                  <td data-th="Genre">${Number.parseFloat(
+                    data[0].accuracy
+                  ).toFixed(2)}%</td>
+                  <td data-th="Year">${Number.parseFloat(
+                    data[0].rappel
+                  ).toFixed(2)}%</td>
+                  <td data-th="Gross">${Number.parseFloat(
+                    data[0].f1_score
+                  ).toFixed(2)}%</td>
+                </tr>
+                 <tr>
+                  <td>Texture</td>
+                  <td data-th="Movie Title">${Number.parseFloat(
+                    data[1].precision
+                  ).toFixed(2)}%</td>
+                  <td data-th="Genre">${Number.parseFloat(
+                    data[1].accuracy
+                  ).toFixed(2)}%</td>
+                  <td data-th="Year">${Number.parseFloat(
+                    data[1].rappel
+                  ).toFixed(2)}%</td>
+                  <td data-th="Gross">${Number.parseFloat(
+                    data[1].f1_score
+                  ).toFixed(2)}%</td>
+                </tr>
+                 <tr>
+                  <td>Forme & histogramme</td>
+                  <td data-th="Movie Title">${Number.parseFloat(
+                    data[2].precision
+                  ).toFixed(2)}%</td>
+                  <td data-th="Genre">${Number.parseFloat(
+                    data[2].accuracy
+                  ).toFixed(2)}%</td>
+                  <td data-th="Year">${Number.parseFloat(
+                    data[2].rappel
+                  ).toFixed(2)}%</td>
+                  <td data-th="Gross">${Number.parseFloat(
+                    data[2].f1_score
+                  ).toFixed(2)}%</td>
+                </tr>
+              </table>
+              `;
+            console.log(template_table);
+            dropzoneText = document.querySelector(".dz-button");
+            console.log(dropzoneText);
+            const form = document.querySelector(".eval-container");
+            const img_histo = document.getElementById("histogramme");
+            const img_text = document.getElementById("texture");
+            const img_forme = document.getElementById("forme");
+            const img_path_h = `/static/img/${data[0].image_url}`;
+            const img_path_t = `/static/img/${data[1].image_url}`;
+            const img_path_f = `/static/img/${data[2].image_url}`;
+            img_histo.setAttribute("src", img_path_h);
+            img_text.setAttribute("src", img_path_t);
+            img_forme.setAttribute("src", img_path_f);
+            const constImgs = document.getElementById("container_imgs");
+            const header = document.querySelector(".heading");
+            constImgs.classList.remove("hidden");
+            header.classList.remove("hidden");
+            form.insertAdjacentHTML("afterbegin", template_table);
+          });
+        }, // init end
+      };
+    </script>
+    <!-- <script></script> -->
+  </body>
+</html>
